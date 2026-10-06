@@ -9,16 +9,19 @@ async function seedDatabase() {
 
   console.log('[Seed] Seeding PERN Technical Case Study initial dataset...');
 
-  // 1. Users (ADMIN and SALES_USER)
+  // 1. Users (ADMIN, SALES_USER, and CUSTOMER)
   const adminPass = await bcrypt.hash('Admin@123', 10);
   const salesPass = await bcrypt.hash('Sales@123', 10);
+  const customerPass = await bcrypt.hash('Customer@Source2026!', 10);
 
   await run(`
     INSERT INTO users (id, email, password_hash, name, role) VALUES
     ('usr-admin-01', 'admin@thesource.com', ?, 'System Administrator', 'ADMIN'),
     ('usr-sales-01', 'sales@thesource.com', ?, 'Senior Sales Executive', 'SALES_USER'),
-    ('usr-admin-02', 'admin@pern.com', ?, 'Case Study Admin', 'ADMIN')
-  `, [adminPass, salesPass, adminPass]);
+    ('usr-admin-02', 'admin@pern.com', ?, 'Case Study Admin', 'ADMIN'),
+    ('usr-cust-01', 'customer@thesource-company.in', ?, 'Site Stakeholder (Customer)', 'SALES_USER'),
+    ('usr-cust-02', 'customer@thesource.com', ?, 'Site Stakeholder (Customer)', 'SALES_USER')
+  `, [adminPass, salesPass, adminPass, customerPass, customerPass]);
 
   // 2. Customers
   await run(`

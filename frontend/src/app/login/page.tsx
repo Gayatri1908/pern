@@ -44,13 +44,16 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickFill = (role: "ADMIN" | "SALES_USER") => {
+  const handleQuickFill = (role: "ADMIN" | "SALES_USER" | "CUSTOMER") => {
     if (role === "ADMIN") {
       setEmail("admin@thesource.com");
       setPassword("Admin@123");
-    } else {
+    } else if (role === "SALES_USER") {
       setEmail("sales@thesource.com");
       setPassword("Sales@123");
+    } else {
+      setEmail("customer@thesource-company.in");
+      setPassword("Customer@Source2026!");
     }
     setError(null);
   };
@@ -159,33 +162,46 @@ export default function LoginPage() {
         {/* Quick-Fill Role Credentials */}
         <div className="mt-8 pt-6 border-t border-slate-800/80">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 text-center">
-            Case Study Demo Credentials
+            Demo Test Credentials
           </p>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => handleQuickFill("ADMIN")}
-              className="p-2.5 rounded-lg border border-slate-800 bg-slate-950/40 hover:bg-slate-800 hover:border-slate-700 transition text-left group"
+              className="p-2 rounded-lg border border-slate-800 bg-slate-950/40 hover:bg-slate-800 hover:border-slate-700 transition text-left group"
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-bold text-blue-400 group-hover:text-blue-300">ADMIN</span>
-                <UserCheck className="w-3.5 h-3.5 text-blue-400" />
+                <span className="text-[11px] font-bold text-blue-400 group-hover:text-blue-300">ADMIN</span>
+                <UserCheck className="w-3 h-3 text-blue-400" />
               </div>
-              <p className="text-[11px] text-slate-400 truncate">admin@thesource.com</p>
-              <p className="text-[10px] text-slate-500">Confirm Orders & Dispatch</p>
+              <p className="text-[10px] text-slate-400 truncate">admin@thesource.com</p>
+              <p className="text-[9px] text-slate-500 truncate">Confirm & Dispatch</p>
             </button>
 
             <button
               type="button"
               onClick={() => handleQuickFill("SALES_USER")}
-              className="p-2.5 rounded-lg border border-slate-800 bg-slate-950/40 hover:bg-slate-800 hover:border-slate-700 transition text-left group"
+              className="p-2 rounded-lg border border-slate-800 bg-slate-950/40 hover:bg-slate-800 hover:border-slate-700 transition text-left group"
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-bold text-emerald-400 group-hover:text-emerald-300">SALES USER</span>
-                <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-[11px] font-bold text-emerald-400 group-hover:text-emerald-300">SALES</span>
+                <UserCheck className="w-3 h-3 text-emerald-400" />
               </div>
-              <p className="text-[11px] text-slate-400 truncate">sales@thesource.com</p>
-              <p className="text-[10px] text-slate-500">Enquiries & Quotations</p>
+              <p className="text-[10px] text-slate-400 truncate">sales@thesource.com</p>
+              <p className="text-[9px] text-slate-500 truncate">Quotes & Orders</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickFill("CUSTOMER")}
+              className="p-2 rounded-lg border border-slate-800 bg-slate-950/40 hover:bg-slate-800 hover:border-slate-700 transition text-left group"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-bold text-amber-400 group-hover:text-amber-300">CUSTOMER</span>
+                <UserCheck className="w-3 h-3 text-amber-400" />
+              </div>
+              <p className="text-[10px] text-slate-400 truncate">customer@thesource...</p>
+              <p className="text-[9px] text-slate-500 truncate">Customer Portal</p>
             </button>
           </div>
         </div>
