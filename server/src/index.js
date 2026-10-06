@@ -36,8 +36,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
+// Health check endpoints
+app.get(['/health', '/api/health'], (req, res) => {
   res.json({
     status: 'ONLINE',
     service: 'The Source Company Industrial IoT API',
