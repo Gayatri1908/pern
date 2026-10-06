@@ -1,0 +1,84 @@
+[
+  {
+    "id": "catalog-1",
+    "name": "Airborne Wind Turbine X1",
+    "tagline": "Industrial-grade energy generation from the sky.",
+    "description": "The Airborne Wind Turbine X1 utilizes advanced tethered drone flight algorithms to capture strong, steady high-altitude wind currents. Designed for heavy industrial energy demands, it offers a reliable microgrid supplement for remote factories and off-grid mining setups.",
+    "status": "Available",
+    "highlights": ["12kW Output", "AI Optimized", "Real-Time IoT", "Low Maintenance", "5-Year Warranty"],
+    "image": "https://images.unsplash.com/photo-1466611653911-95081537e5b7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    "features": [
+      { "icon": "Zap", "title": "AI Energy Optimization", "desc": "Maximizes output by adapting to wind patterns in real-time." },
+      { "icon": "Activity", "title": "Live IoT Monitoring", "desc": "Track performance from anywhere via the cloud." },
+      { "icon": "Settings", "title": "Predictive Maintenance", "desc": "Sensors detect wear before failure occurs." },
+      { "icon": "Cloud", "title": "Cloud Analytics", "desc": "Deep insights and reporting on energy yields." },
+      { "icon": "Wind", "title": "Weather Intelligence", "desc": "Automatic retraction during extreme storm events." },
+      { "icon": "Shield", "title": "Low Noise Operation", "desc": "Silent generation perfect for urban environments." }
+    ],
+    "applications": ["Industrial Plants", "Commercial Buildings", "Agriculture", "Remote Villages", "Telecommunication Towers", "Smart Cities"],
+    "specs": {
+      "Power Output": "12kW",
+      "Operating Height": "150m - 300m",
+      "Wind Speed Range": "3m/s - 25m/s",
+      "Rotor Diameter": "4.5m",
+      "Expected Lifespan": "15 Years",
+      "Warranty": "5 Years Comprehensive",
+      "Efficiency": "up to 45% Capacity Factor"
+    }
+  },
+  {
+    "id": "catalog-2",
+    "name": "Micro-Tether C3",
+    "tagline": "Compact, efficient, and perfect for remote installations.",
+    "description": "The Micro-Tether C3 is a portable wind turbine solution designed for fast deployment. Ideal for research stations, emergency response encampments, and small agricultural setups, it packs down into standard transport cases and can be assembled by a two-person team in under an hour.",
+    "status": "Limited Stock",
+    "highlights": ["5kW Output", "Ultra-Portable", "Quick Setup", "Weather Resistant", "Off-Grid Ready"],
+    "image": "https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    "features": [
+      { "icon": "Zap", "title": "AI Energy Optimization", "desc": "Maximizes output by adapting to wind patterns in real-time." },
+      { "icon": "Activity", "title": "Live IoT Monitoring", "desc": "Track performance from anywhere via the cloud." },
+      { "icon": "Settings", "title": "Predictive Maintenance", "desc": "Sensors detect wear before failure occurs." },
+      { "icon": "Cloud", "title": "Cloud Analytics", "desc": "Deep insights and reporting on energy yields." },
+      { "icon": "Wind", "title": "Weather Intelligence", "desc": "Automatic retraction during extreme storm events." },
+      { "icon": "Shield", "title": "Low Noise Operation", "desc": "Silent generation perfect for urban environments." }
+    ],
+    "applications": ["Industrial Plants", "Commercial Buildings", "Agriculture", "Remote Villages", "Telecommunication Towers", "Smart Cities"],
+    "image": "https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    "specs": {
+      "Power Output": "5kW",
+      "Operating Height": "100m - 200m",
+      "Wind Speed Range": "2.5m/s - 20m/s",
+      "Rotor Diameter": "2.8m",
+      "Expected Lifespan": "10 Years",
+      "Warranty": "3 Years Standard",
+      "Efficiency": "up to 40% Capacity Factor"
+    }
+  },
+  {
+    "id": "catalog-3",
+    "name": "Offshore MegaKite V9",
+    "tagline": "Massive scale renewable generation for offshore platforms.",
+    "description": "Engineered to withstand extreme marine conditions, the Offshore MegaKite V9 captures high-velocity sea winds to generate megawatt-scale power. It integrates directly with offshore gas rigs, deep-sea exploration vessels, and coastal island grids.",
+    "status": "Coming Soon",
+    "highlights": ["100kW Output", "Typhoon Rated", "Grid Scale", "AI Fleet Control", "10-Year Warranty"],
+    "image": "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    "features": [
+      { "icon": "Zap", "title": "AI Energy Optimization", "desc": "Maximizes output by adapting to wind patterns in real-time." },
+      { "icon": "Activity", "title": "Live IoT Monitoring", "desc": "Track performance from anywhere via the cloud." },
+      { "icon": "Settings", "title": "Predictive Maintenance", "desc": "Sensors detect wear before failure occurs." },
+      { "icon": "Cloud", "title": "Cloud Analytics", "desc": "Deep insights and reporting on energy yields." },
+      { "icon": "Wind", "title": "Weather Intelligence", "desc": "Automatic retraction during extreme storm events." },
+      { "icon": "Shield", "title": "Low Noise Operation", "desc": "Silent generation perfect for urban environments." }
+    ],
+    "applications": ["Industrial Plants", "Commercial Buildings", "Agriculture", "Remote Villages", "Telecommunication Towers", "Smart Cities"],
+    "specs": {
+      "Power Output": "100kW",
+      "Operating Height": "200m - 500m",
+      "Wind Speed Range": "4m/s - 35m/s",
+      "Rotor Diameter": "12m",
+      "Expected Lifespan": "20 Years",
+      "Warranty": "10 Years Extended",
+      "Efficiency": "up to 55% Capacity Factor"
+    }
+  }
+]

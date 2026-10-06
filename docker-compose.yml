@@ -1,0 +1,99 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: thesource-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: thesource
+      POSTGRES_PASSWORD: thesource_dev
+      POSTGRES_DB: thesource_dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U thesource -d thesource_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: thesource-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: thesource-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: thesource-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+      - DATABASE_URL=postgresql+asyncpg://thesource:thesource_dev@postgres:5432/thesource_dev
+      - DATABASE_URL_SYNC=postgresql+psycopg2://thesource:thesource_dev@postgres:5432/thesource_dev
+      - REDIS_URL=redis://redis:6379/0
+      - MQTT_BROKER_HOST=mosquitto
+      - MQTT_BROKER_PORT=1883
+      - JWT_SECRET_KEY=CHANGE_ME_IN_PRODUCTION_use_openssl_rand_hex_32
+      - JWT_ALGORITHM=HS256
+      - API_CORS_ORIGINS=["*"]
+    env_file:
+      - ./backend/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: thesource-frontend
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+
+  public-site:
+    image: nginx:alpine
+    container_name: thesource-public-site
+    restart: unless-stopped
+    ports:
+      - "8002:80"
+    volumes:
+      - ./static-site:/usr/share/nginx/html:ro
+
+volumes:
+  pgdata:
+  mosquitto_data:
+  mosquitto_log:
