@@ -30,33 +30,27 @@ async function login(req, res, next) {
       });
     }
 
-    // Update last login
-    await run("UPDATE users SET last_login = datetime('now') WHERE id = ?", [user.id]);
-
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
-        company: user.company
+        role: user.role
       },
       config.JWT_SECRET,
-      { expiresIn: config.JWT_EXPIRES_IN }
+      { expiresIn: config.JWT_EXPIRES_IN || '24h' }
     );
 
     return res.json({
       success: true,
       message: 'Authentication successful',
       token,
-      access_token: token, // compatibility with existing frontend
+      access_token: token,
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
-        company: user.company,
-        phone: user.phone
+        role: user.role
       }
     });
   } catch (err) {
@@ -64,17 +58,13 @@ async function login(req, res, next) {
   }
 }
 
-async function getMe(req, res, next) {
+async function me(req, res, next) {
   try {
-    const user = await get('SELECT id, email, name, role, company, phone, created_at, last_login FROM users WHERE id = ?', [req.user.id]);
+    const user = await get('SELECT id, email, name, role, created_at FROM users WHERE id = ?', [req.user.id]);
     if (!user) {
-      return res.status(404).json({ success: false, error: 'User profile not found.' });
+      return res.status(404).json({ success: false, error: 'User not found.' });
     }
-
-    return res.json({
-      success: true,
-      user
-    });
+    return res.json({ success: true, user });
   } catch (err) {
     next(err);
   }
@@ -82,5 +72,5 @@ async function getMe(req, res, next) {
 
 module.exports = {
   login,
-  getMe
+  me
 };

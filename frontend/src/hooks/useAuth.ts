@@ -1,9 +1,9 @@
 // ============================================================
-// useAuth — authentication state hook
+// useAuth — authentication state hook for PERN Case Study
 // ============================================================
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { apiFetch, clearTokens, getToken, setTokens } from "@/lib/api";
+import { api, clearTokens, getToken, setToken, setStoredUser, getStoredUser } from "@/lib/api";
 import type { User } from "@/types";
 
 interface AuthState {
@@ -23,29 +23,40 @@ export function useAuth() {
 
   const loadUser = useCallback(async () => {
     const token = getToken();
-    if (!token) { setState(s => ({ ...s, isLoading: false })); return; }
-    try {
-      const user = await apiFetch<User>("/api/v1/auth/me");
-      setState({ user, token, isLoading: false, isAuthenticated: true });
-    } catch {
-      clearTokens();
+    const stored = getStoredUser();
+    if (!token) {
       setState({ user: null, token: null, isLoading: false, isAuthenticated: false });
+      return;
+    }
+    try {
+      const res = await api.auth.me();
+      if (res && res.user) {
+        setStoredUser(res.user);
+        setState({ user: res.user, token, isLoading: false, isAuthenticated: true });
+      } else {
+        throw new Error("Failed to load user");
+      }
+    } catch {
+      if (stored) {
+        setState({ user: stored, token, isLoading: false, isAuthenticated: true });
+      } else {
+        clearTokens();
+        setState({ user: null, token: null, isLoading: false, isAuthenticated: false });
+      }
     }
   }, []);
 
-  useEffect(() => { loadUser(); }, [loadUser]);
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const data = await apiFetch<{
-      access_token: string; refresh_token: string; user: User;
-    }>("/api/v1/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-      skipAuth: true,
-    } as Parameters<typeof apiFetch>[1]);
-    setTokens(data.access_token, data.refresh_token);
-    setState({ user: data.user, token: data.access_token, isLoading: false, isAuthenticated: true });
-    return data.user;
+    const res = await api.auth.login({ email, password });
+    if (res && res.token) {
+      setState({ user: res.user, token: res.token, isLoading: false, isAuthenticated: true });
+      return res.user;
+    }
+    throw new Error("Login failed");
   }, []);
 
   const logout = useCallback(() => {

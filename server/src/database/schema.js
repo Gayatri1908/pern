@@ -2,221 +2,161 @@ const { exec } = require('./db');
 
 async function initializeSchema() {
   const schemaSQL = `
-    -- 1. Users Table
+    -- 1. Users Table (ADMIN & SALES_USER)
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       name TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('Super Admin', 'Admin', 'Operator', 'Customer')),
-      company TEXT DEFAULT 'The Source Company',
+      role TEXT NOT NULL CHECK(role IN ('ADMIN', 'SALES_USER', 'Super Admin')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- 2. Customers Table
+    CREATE TABLE IF NOT EXISTS customers (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
       phone TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      last_login DATETIME
+      company TEXT NOT NULL,
+      address TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- 2. Energy Systems Table (Airborne Wind Energy Systems)
-    CREATE TABLE IF NOT EXISTS energy_systems (
+    -- 3. Products & Inventory
+    -- Available Stock = physical_quantity - reserved_quantity
+    CREATE TABLE IF NOT EXISTS products (
       id TEXT PRIMARY KEY,
-      system_name TEXT NOT NULL,
-      model TEXT NOT NULL,
-      serial_number TEXT UNIQUE NOT NULL,
-      location TEXT NOT NULL,
-      latitude REAL NOT NULL,
-      longitude REAL NOT NULL,
-      rated_power_kw REAL NOT NULL,
-      current_power_kw REAL NOT NULL DEFAULT 0.0,
-      energy_today_kwh REAL NOT NULL DEFAULT 0.0,
-      energy_lifetime_mwh REAL NOT NULL DEFAULT 0.0,
-      status TEXT NOT NULL CHECK(status IN ('ONLINE', 'OFFLINE', 'STANDBY', 'MAINTENANCE', 'FAULT')),
-      health_status TEXT NOT NULL CHECK(health_status IN ('GOOD', 'FAIR', 'WARNING', 'CRITICAL')),
-      availability_pct REAL NOT NULL DEFAULT 98.5,
-      efficiency_pct REAL NOT NULL DEFAULT 42.0,
-      last_telemetry_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      active_alerts_count INTEGER NOT NULL DEFAULT 0,
-      commission_date DATE NOT NULL
+      sku TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      unit_price REAL NOT NULL CHECK(unit_price >= 0),
+      physical_quantity INTEGER NOT NULL DEFAULT 0 CHECK(physical_quantity >= 0),
+      reserved_quantity INTEGER NOT NULL DEFAULT 0 CHECK(reserved_quantity >= 0),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE INDEX IF NOT EXISTS idx_systems_status ON energy_systems(status);
-    CREATE INDEX IF NOT EXISTS idx_systems_model ON energy_systems(model);
-
-    -- 3. System Components / Hardware Table
-    CREATE TABLE IF NOT EXISTS system_components (
+    -- 4. Enquiries Table
+    CREATE TABLE IF NOT EXISTS enquiries (
       id TEXT PRIMARY KEY,
-      system_id TEXT NOT NULL,
-      component_name TEXT NOT NULL,
-      component_type TEXT NOT NULL CHECK(component_type IN (
-        'Generator', 'Power Electronics', 'Control System', 'Sensors', 'Mechanical', 'Communication', 'Energy Storage'
-      )),
-      serial_number TEXT NOT NULL,
-      status TEXT NOT NULL CHECK(status IN ('ONLINE', 'WARNING', 'FAULT', 'OFFLINE')),
-      health_score INTEGER NOT NULL CHECK(health_score BETWEEN 0 AND 100),
-      operating_hours REAL NOT NULL DEFAULT 0.0,
-      last_maintenance_date DATE,
-      next_maintenance_date DATE,
-      FOREIGN KEY (system_id) REFERENCES energy_systems(id) ON DELETE CASCADE
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_components_system ON system_components(system_id);
-
-    -- 4. Live & Historical Telemetry Table
-    CREATE TABLE IF NOT EXISTS telemetry (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      system_id TEXT NOT NULL,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-      power_output_kw REAL NOT NULL,
-      voltage_v REAL NOT NULL,
-      current_a REAL NOT NULL,
-      wind_speed_ms REAL NOT NULL,
-      wind_direction_deg REAL NOT NULL,
-      tether_tension_kn REAL NOT NULL,
-      rotor_rpm REAL NOT NULL,
-      flight_altitude_m REAL NOT NULL,
-      temperature_c REAL NOT NULL,
-      battery_soc_pct REAL NOT NULL,
-      system_load_pct REAL NOT NULL,
-      efficiency_pct REAL NOT NULL,
-      FOREIGN KEY (system_id) REFERENCES energy_systems(id) ON DELETE CASCADE
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_telemetry_system_time ON telemetry(system_id, timestamp);
-
-    -- 5. Energy Generation Aggregates Table
-    CREATE TABLE IF NOT EXISTS energy_generation (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      system_id TEXT NOT NULL,
-      date DATE NOT NULL,
-      hour INTEGER NOT NULL,
-      energy_generated_kwh REAL NOT NULL,
-      peak_power_kw REAL NOT NULL,
-      avg_wind_speed_ms REAL NOT NULL,
-      operating_hours REAL NOT NULL DEFAULT 1.0,
-      FOREIGN KEY (system_id) REFERENCES energy_systems(id) ON DELETE CASCADE,
-      UNIQUE(system_id, date, hour)
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_generation_system_date ON energy_generation(system_id, date);
-
-    -- 6. System Health Diagnostic Table
-    CREATE TABLE IF NOT EXISTS system_health (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      system_id TEXT NOT NULL,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-      overall_health_score INTEGER NOT NULL CHECK(overall_health_score BETWEEN 0 AND 100),
-      aerodynamics_score INTEGER NOT NULL,
-      tether_winch_score INTEGER NOT NULL,
-      generator_score INTEGER NOT NULL,
-      power_electronics_score INTEGER NOT NULL,
-      storage_score INTEGER NOT NULL,
-      control_avionics_score INTEGER NOT NULL,
-      fault_count INTEGER NOT NULL DEFAULT 0,
-      warning_count INTEGER NOT NULL DEFAULT 0,
-      FOREIGN KEY (system_id) REFERENCES energy_systems(id) ON DELETE CASCADE
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_health_system ON system_health(system_id);
-
-    -- 7. Alerts Table
-    CREATE TABLE IF NOT EXISTS alerts (
-      id TEXT PRIMARY KEY,
-      system_id TEXT NOT NULL,
-      alert_type TEXT NOT NULL,
-      severity TEXT NOT NULL CHECK(severity IN ('INFO', 'WARNING', 'CRITICAL')),
-      status TEXT NOT NULL CHECK(status IN ('ACTIVE', 'ACKNOWLEDGED', 'RESOLVED')),
-      title TEXT NOT NULL,
-      description TEXT NOT NULL,
-      threshold_breached TEXT,
-      triggered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      acknowledged_at DATETIME,
-      acknowledged_by TEXT,
-      resolved_at DATETIME,
-      resolved_by TEXT,
-      FOREIGN KEY (system_id) REFERENCES energy_systems(id) ON DELETE CASCADE
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_alerts_system_status ON alerts(system_id, status);
-    CREATE INDEX IF NOT EXISTS idx_alerts_severity ON alerts(severity);
-
-    -- 8. Operational Events Table
-    CREATE TABLE IF NOT EXISTS events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      system_id TEXT,
-      event_type TEXT NOT NULL,
-      event_source TEXT NOT NULL,
-      severity TEXT NOT NULL CHECK(severity IN ('INFO', 'WARNING', 'CRITICAL')),
-      description TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (system_id) REFERENCES energy_systems(id) ON DELETE SET NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at);
-
-    -- 9. Maintenance / Operations Records Table
-    CREATE TABLE IF NOT EXISTS maintenance_records (
-      id TEXT PRIMARY KEY,
-      system_id TEXT NOT NULL,
-      component_id TEXT,
-      maintenance_type TEXT NOT NULL CHECK(maintenance_type IN ('PREVENTATIVE', 'CORRECTIVE', 'EMERGENCY', 'INSPECTION')),
-      status TEXT NOT NULL CHECK(status IN ('SCHEDULED', 'IN PROGRESS', 'COMPLETED', 'OVERDUE')),
-      title TEXT NOT NULL,
-      description TEXT NOT NULL,
-      scheduled_date DATE NOT NULL,
-      completed_date DATE,
-      technician TEXT NOT NULL,
+      enquiry_number TEXT UNIQUE NOT NULL,
+      customer_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'NEW' CHECK(status IN ('NEW', 'QUOTED', 'CLOSED')),
       notes TEXT,
-      next_due_date DATE,
+      created_by TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (system_id) REFERENCES energy_systems(id) ON DELETE CASCADE,
-      FOREIGN KEY (component_id) REFERENCES system_components(id) ON DELETE SET NULL
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT,
+      FOREIGN KEY (created_by) REFERENCES users(id)
     );
 
-    CREATE INDEX IF NOT EXISTS idx_maintenance_status ON maintenance_records(status);
-
-    -- 10. System Configurations Table
-    CREATE TABLE IF NOT EXISTS system_configurations (
-      system_id TEXT PRIMARY KEY,
-      cut_in_wind_speed REAL NOT NULL DEFAULT 3.0,
-      cut_out_wind_speed REAL NOT NULL DEFAULT 25.0,
-      max_altitude_m REAL NOT NULL DEFAULT 350.0,
-      max_tension_kn REAL NOT NULL DEFAULT 45.0,
-      max_rotor_rpm REAL NOT NULL DEFAULT 850.0,
-      overtemp_threshold_c REAL NOT NULL DEFAULT 75.0,
-      low_voltage_cutoff_v REAL NOT NULL DEFAULT 360.0,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (system_id) REFERENCES energy_systems(id) ON DELETE CASCADE
+    -- 5. Enquiry Items (Multiple products per enquiry)
+    CREATE TABLE IF NOT EXISTS enquiry_items (
+      id TEXT PRIMARY KEY,
+      enquiry_id TEXT NOT NULL,
+      product_id TEXT NOT NULL,
+      quantity INTEGER NOT NULL CHECK(quantity > 0),
+      target_price REAL,
+      notes TEXT,
+      FOREIGN KEY (enquiry_id) REFERENCES enquiries(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
     );
+
+    -- 6. Quotations Table
+    CREATE TABLE IF NOT EXISTS quotations (
+      id TEXT PRIMARY KEY,
+      quotation_number TEXT UNIQUE NOT NULL,
+      enquiry_id TEXT NOT NULL,
+      customer_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'ORDERED')),
+      subtotal REAL NOT NULL DEFAULT 0.00,
+      discount_pct REAL NOT NULL DEFAULT 0.00 CHECK(discount_pct >= 0 AND discount_pct <= 100),
+      discount_amount REAL NOT NULL DEFAULT 0.00,
+      gst_rate_pct REAL NOT NULL DEFAULT 18.00,
+      gst_amount REAL NOT NULL DEFAULT 0.00,
+      total_amount REAL NOT NULL DEFAULT 0.00,
+      valid_until DATE,
+      created_by TEXT NOT NULL,
+      sent_at DATETIME,
+      decision_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (enquiry_id) REFERENCES enquiries(id) ON DELETE RESTRICT,
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT,
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    );
+
+    -- 7. Quotation Items
+    CREATE TABLE IF NOT EXISTS quotation_items (
+      id TEXT PRIMARY KEY,
+      quotation_id TEXT NOT NULL,
+      product_id TEXT NOT NULL,
+      quantity INTEGER NOT NULL CHECK(quantity > 0),
+      unit_price REAL NOT NULL CHECK(unit_price >= 0),
+      line_total REAL NOT NULL,
+      FOREIGN KEY (quotation_id) REFERENCES quotations(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+    );
+
+    -- 8. Sales Orders Table (Only created from ACCEPTED quotations)
+    CREATE TABLE IF NOT EXISTS sales_orders (
+      id TEXT PRIMARY KEY,
+      order_number TEXT UNIQUE NOT NULL,
+      quotation_id TEXT UNIQUE NOT NULL,
+      enquiry_id TEXT NOT NULL,
+      customer_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING', 'CONFIRMED', 'DISPATCHED', 'CANCELLED')),
+      total_amount REAL NOT NULL,
+      confirmed_by TEXT,
+      confirmed_at DATETIME,
+      dispatched_by TEXT,
+      dispatched_at DATETIME,
+      dispatch_tracking_number TEXT,
+      dispatch_notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (quotation_id) REFERENCES quotations(id) ON DELETE RESTRICT,
+      FOREIGN KEY (enquiry_id) REFERENCES enquiries(id) ON DELETE RESTRICT,
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT,
+      FOREIGN KEY (confirmed_by) REFERENCES users(id),
+      FOREIGN KEY (dispatched_by) REFERENCES users(id)
+    );
+
+    -- 9. Sales Order Items
+    CREATE TABLE IF NOT EXISTS sales_order_items (
+      id TEXT PRIMARY KEY,
+      sales_order_id TEXT NOT NULL,
+      product_id TEXT NOT NULL,
+      quantity INTEGER NOT NULL CHECK(quantity > 0),
+      unit_price REAL NOT NULL,
+      line_total REAL NOT NULL,
+      FOREIGN KEY (sales_order_id) REFERENCES sales_orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+    );
+
+    -- 10. Inventory Audit / Transactions Log
+    CREATE TABLE IF NOT EXISTS inventory_transactions (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL,
+      sales_order_id TEXT,
+      transaction_type TEXT NOT NULL CHECK(transaction_type IN ('RESERVED', 'DISPATCHED', 'RESTOCKED', 'RELEASED')),
+      quantity INTEGER NOT NULL,
+      previous_physical INTEGER NOT NULL,
+      new_physical INTEGER NOT NULL,
+      previous_reserved INTEGER NOT NULL,
+      new_reserved INTEGER NOT NULL,
+      created_by TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+      FOREIGN KEY (sales_order_id) REFERENCES sales_orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_enq_cust ON enquiries(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_quo_enq ON quotations(enquiry_id);
+    CREATE INDEX IF NOT EXISTS idx_so_quo ON sales_orders(quotation_id);
+    CREATE INDEX IF NOT EXISTS idx_prod_sku ON products(sku);
   `;
 
   await exec(schemaSQL);
-
-  // Auto-migrate users table if existing table lacks Customer role check
-  const { get } = require('./db');
-  try {
-    const tableInfo = await get("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'");
-    if (tableInfo && tableInfo.sql && !tableInfo.sql.includes('Customer')) {
-      await exec(`
-        PRAGMA foreign_keys=off;
-        CREATE TABLE users_temp (
-          id TEXT PRIMARY KEY,
-          email TEXT UNIQUE NOT NULL,
-          password_hash TEXT NOT NULL,
-          name TEXT NOT NULL,
-          role TEXT NOT NULL CHECK(role IN ('Super Admin', 'Admin', 'Operator', 'Customer')),
-          company TEXT DEFAULT 'The Source Company',
-          phone TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          last_login DATETIME
-        );
-        INSERT INTO users_temp SELECT * FROM users;
-        DROP TABLE users;
-        ALTER TABLE users_temp RENAME TO users;
-        PRAGMA foreign_keys=on;
-      `);
-      console.log('[Migration] Migrated users table to support Customer and Super Admin roles.');
-    }
-  } catch (err) {
-    console.error('[Migration] Migration check error:', err);
-  }
+  console.log('[Schema] Case study relational schema initialized successfully.');
 }
 
 module.exports = {
