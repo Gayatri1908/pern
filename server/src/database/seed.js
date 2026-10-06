@@ -1,27 +1,70 @@
 const bcrypt = require('bcryptjs');
 const { get, run, all } = require('./db');
 
+async function ensureCoreUsers() {
+  const usersToSeed = [
+    {
+      id: 'usr-admin-01',
+      email: 'admin@thesource-company.in',
+      pass: 'Admin@Source2026!',
+      name: 'Chief Operations Officer',
+      role: 'Admin',
+      company: 'The Source Company HQ',
+      phone: '+91 98765 43210'
+    },
+    {
+      id: 'usr-op-01',
+      email: 'operator@thesource-company.in',
+      pass: 'Operator@Source2026!',
+      name: 'Lead Flight & Grid Engineer',
+      role: 'Operator',
+      company: 'The Source Operations Center',
+      phone: '+91 98765 43211'
+    },
+    {
+      id: 'usr-cust-01',
+      email: 'customer@thesource-company.in',
+      pass: 'Customer@Source2026!',
+      name: 'Site Stakeholder / Off-Taker',
+      role: 'Customer',
+      company: 'Clean Energy Utilities Ltd',
+      phone: '+91 98765 43212'
+    },
+    {
+      id: 'usr-super-01',
+      email: 'thesource.companyweb@gmail.com',
+      pass: 'TheSourceTon@2004',
+      name: 'System Administrator',
+      role: 'Super Admin',
+      company: 'The Source Company',
+      phone: '+91 99999 99999'
+    }
+  ];
+
+  for (const u of usersToSeed) {
+    const existing = await get('SELECT id FROM users WHERE LOWER(email) = LOWER(?)', [u.email]);
+    if (!existing) {
+      const hash = await bcrypt.hash(u.pass, 10);
+      await run(`
+        INSERT INTO users (id, email, password_hash, name, role, company, phone)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `, [u.id, u.email, hash, u.name, u.role, u.company, u.phone]);
+      console.log(`[Seed] Provisioned core account: ${u.email} (${u.role})`);
+    }
+  }
+}
+
 async function seedDatabase() {
-  // Check if users already seeded
-  const existingUser = await get('SELECT id FROM users LIMIT 1');
-  if (existingUser) {
-    console.log('Database already seeded. Skipping initial seeding.');
+  // Always verify core system users exist
+  await ensureCoreUsers();
+
+  // Check if full dataset already seeded
+  const existingSystems = await get('SELECT id FROM energy_systems LIMIT 1');
+  if (existingSystems) {
     return;
   }
 
   console.log('Seeding initial Source Company energy platform data...');
-
-  // 1. Seed Users
-  const adminHash = await bcrypt.hash('Admin@Source2026!', 10);
-  const operatorHash = await bcrypt.hash('Operator@Source2026!', 10);
-  const legacySuperadminHash = await bcrypt.hash('TheSourceTon@2004', 10);
-
-  await run(`
-    INSERT INTO users (id, email, password_hash, name, role, company, phone) VALUES
-    ('usr-admin-01', 'admin@thesource-company.in', ?, 'Chief Operations Officer', 'Admin', 'The Source Company HQ', '+91 98765 43210'),
-    ('usr-op-01', 'operator@thesource-company.in', ?, 'Lead Flight & Grid Engineer', 'Operator', 'The Source Operations Center', '+91 98765 43211'),
-    ('usr-super-01', 'thesource.companyweb@gmail.com', ?, 'System Administrator', 'Admin', 'The Source Company', '+91 99999 99999')
-  `, [adminHash, operatorHash, legacySuperadminHash]);
 
   // 2. Seed Energy Systems
   const systems = [

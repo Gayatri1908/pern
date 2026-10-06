@@ -37,6 +37,10 @@ function requireRole(allowedRoles) {
       });
     }
 
+    if (req.user.role === 'Super Admin') {
+      return next();
+    }
+
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,

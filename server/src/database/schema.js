@@ -8,7 +8,7 @@ async function initializeSchema() {
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       name TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('Admin', 'Operator')),
+      role TEXT NOT NULL CHECK(role IN ('Super Admin', 'Admin', 'Operator', 'Customer')),
       company TEXT DEFAULT 'The Source Company',
       phone TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -188,6 +188,35 @@ async function initializeSchema() {
   `;
 
   await exec(schemaSQL);
+
+  // Auto-migrate users table if existing table lacks Customer role check
+  const { get } = require('./db');
+  try {
+    const tableInfo = await get("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'");
+    if (tableInfo && tableInfo.sql && !tableInfo.sql.includes('Customer')) {
+      await exec(`
+        PRAGMA foreign_keys=off;
+        CREATE TABLE users_temp (
+          id TEXT PRIMARY KEY,
+          email TEXT UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          name TEXT NOT NULL,
+          role TEXT NOT NULL CHECK(role IN ('Super Admin', 'Admin', 'Operator', 'Customer')),
+          company TEXT DEFAULT 'The Source Company',
+          phone TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          last_login DATETIME
+        );
+        INSERT INTO users_temp SELECT * FROM users;
+        DROP TABLE users;
+        ALTER TABLE users_temp RENAME TO users;
+        PRAGMA foreign_keys=on;
+      `);
+      console.log('[Migration] Migrated users table to support Customer and Super Admin roles.');
+    }
+  } catch (err) {
+    console.error('[Migration] Migration check error:', err);
+  }
 }
 
 module.exports = {
